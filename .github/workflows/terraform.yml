@@ -1,0 +1,80 @@
+name: Terraform
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "bootstrap/**"
+      - ".github/workflows/terraform.yml"
+  pull_request:
+    paths:
+      - "bootstrap/**"
+      - ".github/workflows/terraform.yml"
+
+permissions:
+  id-token: write   # required for OIDC token exchange
+  contents: read
+  pull-requests: write  # allow posting plan output as PR comment
+
+jobs:
+  terraform:
+    name: ${{ github.event_name == 'push' && 'Apply' || 'Plan' }}
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: eu-north-1
+    defaults:
+      run:
+        working-directory: bootstrap
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -no-color -var-file=terraform.tfvars -out=tfplan 2>&1 | tee plan_output.txt
+          echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Post plan to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('bootstrap/plan_output.txt', 'utf8');
+            const maxLen = 65000;
+            const truncated = plan.length > maxLen
+              ? plan.slice(0, maxLen) + '\n\n...(truncated)'
+              : plan;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### Terraform Plan\n\`\`\`\n${truncated}\n\`\`\``,
+            });
+
+      - name: Terraform Apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve -var-file=terraform.tfvars tfplan
