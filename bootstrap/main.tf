@@ -157,7 +157,7 @@ data "aws_iam_policy_document" "tfstate_rw" {
     sid    = "BucketConfigurationManagement"
     effect = "Allow"
     actions = [
-      "s3:GetBucket*",
+      "s3:Get*",
       "s3:PutBucketPolicy",
       "s3:GetBucketPublicAccessBlock",
       "s3:PutBucketPublicAccessBlock",
