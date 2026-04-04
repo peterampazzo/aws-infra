@@ -157,6 +157,7 @@ data "aws_iam_policy_document" "tfstate_rw" {
     sid    = "BucketConfigurationManagement"
     effect = "Allow"
     actions = [
+      "s3:GetBucketAcl",
       "s3:GetBucketPolicy",
       "s3:PutBucketPolicy",
       "s3:GetBucketPublicAccessBlock",
@@ -186,6 +187,7 @@ data "aws_iam_policy_document" "tfstate_rw" {
     effect = "Allow"
     actions = [
       "iam:GetRole",
+      "iam:ListRolePolicies",
       "iam:UpdateAssumeRolePolicy",
       "iam:AttachRolePolicy",
       "iam:DetachRolePolicy",
