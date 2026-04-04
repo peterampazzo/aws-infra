@@ -80,4 +80,46 @@ unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION
 
 ## Ongoing: CI/CD Workflow
 
-Push changes to `main` → Terraform auto-applies. Open a PR → plan posted as a comment.
+### Phase 6: Migrate Local State to S3
+
+Once the bootstrap role is ready, migrate Terraform state from local to the S3 bucket:
+
+```bash
+cd bootstrap
+
+# Uncomment the backend "s3" block in providers.tf
+# (Remove the # symbols from the backend block)
+
+# Migrate
+terraform init -migrate-state
+# Type 'yes' when prompted
+```
+
+## Adding New Repositories
+
+To grant another repository access to the state bucket:
+
+1. Add the repo to `bootstrap/terraform.tfvars`:
+
+```hcl
+allowed_github_repos = [
+  "peterampazzo/aws-infra",
+  "peterampazzo/other-repo",   # <- Add here
+]
+```
+
+2. Apply the change:
+
+```bash
+cd bootstrap
+terraform apply
+```
+
+3. Set the `AWS_ROLE_ARN` variable in the new repo's GitHub settings (same as Phase 4).
+
+## Ongoing: CI/CD Workflow
+
+**Workflow:**
+
+- Push to `main` → Terraform auto-applies
+- Open a PR → plan posted as a comment

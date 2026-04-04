@@ -12,11 +12,11 @@ terraform {
   # After the first manual `terraform apply`, uncomment this backend block,
   # then run:  terraform init -migrate-state
   # -----------------------------------------------------------------------
-  # backend "s3" {
-  #   bucket = "rampazzo-tfstate"
-  #   key    = "bootstrap/terraform.tfstate"
-  #   region = "eu-north-1"
-  # }
+   backend "s3" {
+     bucket = "rampazzo-tfstate"
+     key    = "bootstrap.tfstate"
+     region = "eu-north-1"
+  }
 }
 
 provider "aws" {
