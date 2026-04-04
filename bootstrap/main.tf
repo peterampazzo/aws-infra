@@ -2,6 +2,14 @@
 # S3 bucket for Terraform remote state
 # ─────────────────────────────────────────────
 
+data "aws_caller_identity" "current" {}
+
+locals {
+  github_oidc_provider_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
+  github_actions_role_arn  = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/github-actions-tfstate"
+  tfstate_policy_arn       = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/tfstate-read-write"
+}
+
 resource "aws_s3_bucket" "tfstate" {
   bucket = var.state_bucket_name
 
@@ -141,6 +149,63 @@ data "aws_iam_policy_document" "tfstate_rw" {
       "s3:DeleteObject",
     ]
     resources = ["${aws_s3_bucket.tfstate.arn}/*"]
+  }
+
+  # Terraform in CI manages bootstrap resources too (bucket policy, OIDC provider,
+  # role trust, and attached policies), so this role needs read/update permissions.
+  statement {
+    sid    = "BucketConfigurationManagement"
+    effect = "Allow"
+    actions = [
+      "s3:GetBucketPolicy",
+      "s3:PutBucketPolicy",
+      "s3:GetBucketPublicAccessBlock",
+      "s3:PutBucketPublicAccessBlock",
+      "s3:GetEncryptionConfiguration",
+      "s3:PutEncryptionConfiguration",
+      "s3:GetBucketVersioning",
+      "s3:PutBucketVersioning",
+    ]
+    resources = [aws_s3_bucket.tfstate.arn]
+  }
+
+  statement {
+    sid    = "OidcProviderManagement"
+    effect = "Allow"
+    actions = [
+      "iam:GetOpenIDConnectProvider",
+      "iam:UpdateOpenIDConnectProviderThumbprint",
+      "iam:AddClientIDToOpenIDConnectProvider",
+      "iam:RemoveClientIDFromOpenIDConnectProvider",
+    ]
+    resources = [local.github_oidc_provider_arn]
+  }
+
+  statement {
+    sid    = "RoleManagement"
+    effect = "Allow"
+    actions = [
+      "iam:GetRole",
+      "iam:UpdateAssumeRolePolicy",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+    ]
+    resources = [local.github_actions_role_arn]
+  }
+
+  statement {
+    sid    = "ManagedPolicyVersionManagement"
+    effect = "Allow"
+    actions = [
+      "iam:GetPolicy",
+      "iam:GetPolicyVersion",
+      "iam:ListPolicyVersions",
+      "iam:CreatePolicyVersion",
+      "iam:DeletePolicyVersion",
+      "iam:SetDefaultPolicyVersion",
+    ]
+    resources = [local.tfstate_policy_arn]
   }
 }
 
