@@ -157,9 +157,7 @@ data "aws_iam_policy_document" "tfstate_rw" {
     sid    = "BucketConfigurationManagement"
     effect = "Allow"
     actions = [
-      "s3:GetBucketAcl",
-      "s3:GetBucketCORS",
-      "s3:GetBucketPolicy",
+      "s3:GetBucket*",
       "s3:PutBucketPolicy",
       "s3:GetBucketPublicAccessBlock",
       "s3:PutBucketPublicAccessBlock",
@@ -175,6 +173,7 @@ data "aws_iam_policy_document" "tfstate_rw" {
     sid    = "OidcProviderManagement"
     effect = "Allow"
     actions = [
+      "iam:ListOpenIDConnectProviders",
       "iam:GetOpenIDConnectProvider",
       "iam:UpdateOpenIDConnectProviderThumbprint",
       "iam:AddClientIDToOpenIDConnectProvider",
@@ -189,6 +188,8 @@ data "aws_iam_policy_document" "tfstate_rw" {
     actions = [
       "iam:GetRole",
       "iam:ListRolePolicies",
+      "iam:TagRole",
+      "iam:UntagRole",
       "iam:UpdateAssumeRolePolicy",
       "iam:AttachRolePolicy",
       "iam:DetachRolePolicy",
@@ -204,6 +205,9 @@ data "aws_iam_policy_document" "tfstate_rw" {
       "iam:GetPolicy",
       "iam:GetPolicyVersion",
       "iam:ListPolicyVersions",
+      "iam:ListEntitiesForPolicy",
+      "iam:TagPolicy",
+      "iam:UntagPolicy",
       "iam:CreatePolicyVersion",
       "iam:DeletePolicyVersion",
       "iam:SetDefaultPolicyVersion",
